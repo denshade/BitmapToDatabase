@@ -1,6 +1,7 @@
 
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +23,7 @@ public class StoreFromDatabase
         File file = new File(filename);
         if (file.canRead())
         {
-            System.err.println("File already exists: " + file);
+            System.err.println("Cancelled: Output File already exists: " + file);
             System.exit(2);
         }
         int id = lookupFile(filename);
@@ -35,7 +36,7 @@ public class StoreFromDatabase
     }
 
     private static int lookupFile(String filename) {
-        return 0;
+        return 1;
     }
 
     private static void loadImageFromDatabase(int id, final String filename) throws IOException {
@@ -45,16 +46,10 @@ public class StoreFromDatabase
         System.out.println("Connecting database...");
 
         try (Connection connection = DriverManager.getConnection(url, username, password)) {
-            PreparedStatement maxDim = connection.prepareStatement("SELECT max(x), max(y) FROM imagedata WHERE imageid = ?");
-            maxDim.setInt(1, id);
-            ResultSet set = maxDim.executeQuery();
-            set.next();
-            int maxX = set.getInt(1) + 1;
-            int maxY = set.getInt(2) + 1;
-            int[] matrix = new int[maxX * maxY];
-            PreparedStatement colorLoop = connection.prepareStatement("SELECT x, y, r, g, b, a FROM imagedata WHERE imageid = ?");
-            colorLoop.setInt(1, id);
-            ResultSet colorset = colorLoop.executeQuery();
+            Dimension dimension = getImageDimension(id, connection);
+            ResultSet colorset = getColorResultSet(id, connection);
+            BufferedImage image = new BufferedImage((int)dimension.getWidth(), (int)dimension.getHeight(), BufferedImage.TYPE_INT_RGB);
+
             while (colorset.next())
             {
                 int counter = 1;
@@ -64,25 +59,31 @@ public class StoreFromDatabase
                 int g = colorset.getInt(counter++);
                 int b = colorset.getInt(counter++);
                 int a = colorset.getInt(counter++);
-                matrix[x + y * maxX] = ColorSplitter.combineToRGBA(new int[]{r,g,b,a});
+                image.setRGB(x, y, ColorSplitter.combineToRGBA(new int[]{r,g,b,a}));
             }
 
-
-            DataBufferInt buffer = new DataBufferInt(matrix, matrix.length);
-
-            int[] bandMasks = {0xFF0000, 0xFF00, 0xFF, 0xFF000000}; // ARGB (yes, ARGB, as the masks are R, G, B, A always) order
-            WritableRaster raster = Raster.createPackedRaster(buffer, maxX, maxY, maxX, bandMasks, null);
-
-            System.out.println("raster: " + raster);
-
-            ColorModel cm = ColorModel.getRGBdefault();
-            BufferedImage image = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
             ImageIO.write(image, "jpg", new File(filename));
-
+            System.out.println("Stored image");
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
 
+    }
+
+    private static ResultSet getColorResultSet(int id, Connection connection) throws SQLException {
+        PreparedStatement colorLoop = connection.prepareStatement("SELECT x, y, r, g, b, a FROM imagedata WHERE imageid = ?");
+        colorLoop.setInt(1, id);
+        return colorLoop.executeQuery();
+    }
+
+    private static Dimension getImageDimension(int id, Connection connection) throws SQLException {
+        PreparedStatement maxDim = connection.prepareStatement("SELECT max(x), max(y) FROM imagedata WHERE imageid = ?");
+        maxDim.setInt(1, id);
+        ResultSet set = maxDim.executeQuery();
+        set.next();
+        int maxX = set.getInt(1) + 1;
+        int maxY = set.getInt(2) + 1;
+        return new Dimension(maxX, maxY);
     }
 }

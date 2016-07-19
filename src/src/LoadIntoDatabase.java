@@ -42,7 +42,7 @@ public class LoadIntoDatabase
 
     private static int registerImage(String filename) {
         //TODO
-        return 0;
+        return 2;
     }
 
     private static void storeImageToDb(BufferedImage image, int id) {
@@ -65,10 +65,12 @@ public class LoadIntoDatabase
                 statement.setInt(3, row);
 
                 int color = image.getRGB(col, row);
-                int r = (color)&0xFF;
-                int g = (color>>8)&0xFF;
-                int b = (color>>16)&0xFF;
-                int a = (color>>24)&0xFF;
+                image.getRaster();
+                int[] colorArray = ColorSplitter.splitToColors(color);
+                int r = colorArray[0];
+                int g = colorArray[1];
+                int b = colorArray[2];
+                int a = colorArray[3];
                 statement.setInt(4, r);
                 statement.setInt(5, g);
                 statement.setInt(6, b);
@@ -79,6 +81,8 @@ public class LoadIntoDatabase
         } catch (SQLException e) {
             throw new IllegalStateException("Cannot connect the database!", e);
         }
+
+
         System.out.println("Stored image");
     }
 
