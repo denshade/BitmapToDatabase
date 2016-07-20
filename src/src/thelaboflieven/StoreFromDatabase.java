@@ -12,29 +12,25 @@ import java.sql.*;
  */
 public class StoreFromDatabase {
     public static void main(String[] args) {
-        if (args.length != 1) {
-            System.err.println("Usage: thelaboflieven.StoreFromDatabase <filename>");
+        if (args.length != 2) {
+            System.err.println("Usage: thelaboflieven.StoreFromDatabase <filename> <sourceImageId>");
             System.exit(1);
         }
         String filename = args[0];
+        int sourceImageId = Integer.parseInt(args[1]);
         File file = new File(filename);
         if (file.canRead()) {
             System.err.println("Cancelled: Output File already exists: " + file);
-            System.exit(2);
+            //System.exit(2);
         }
-        int id = lookupFile(filename);
         try {
-            loadImageFromDatabase(id, filename);
+            loadImageFromDatabase(sourceImageId, filename);
         } catch (IOException e) {
             System.err.println("Can't write file " + file);
             System.exit(2);
         } catch (SQLException e) {
             e.printStackTrace();
         }
-    }
-
-    private static int lookupFile(String filename) {
-        return 1;
     }
 
     private static void loadImageFromDatabase(int id, final String filename) throws IOException, SQLException {

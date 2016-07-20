@@ -14,32 +14,30 @@ import java.sql.SQLException;
  */
 public class LoadIntoDatabase
 {
-    public static void main(String[] args) throws SQLException {
-        if (args.length != 1)
+    public static void main(String[] args) throws Exception {
+        if (args.length != 2)
         {
-            System.err.println("Usage: thelaboflieven.LoadIntoDatabase <filename>");
+            System.err.println("Usage: thelaboflieven.LoadIntoDatabase <filename> <destinationImageId>");
             System.exit(1);
         }
         String filename = args[0];
+        int sourceImageId = Integer.parseInt(args[1]);
         File file = new File(filename);
         if (!file.canRead())
         {
             System.err.println("Can't read file " + file);
             System.exit(2);
         }
-        int id = registerImage(filename);
         try {
             BufferedImage img = ImageIO.read(new File(filename));
-            storeImageToDb(img, id);
+            if (img == null) {
+                throw new Exception("The image cannot be loaded: " + filename);
+            }
+            storeImageToDb(img, sourceImageId);
         } catch (IOException e) {
             System.err.println("Can't read file " + file);
             System.exit(2);
         }
-    }
-
-    private static int registerImage(String filename) {
-        //TODO
-        return 2;
     }
 
     private static void storeImageToDb(BufferedImage image, int id) throws SQLException {
