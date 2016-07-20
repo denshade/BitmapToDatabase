@@ -1,5 +1,4 @@
-
-import java.awt.*;
+package thelaboflieven;
 
 import static org.junit.Assert.*;
 
